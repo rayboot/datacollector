@@ -2,6 +2,7 @@ package gui;
 
 import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 import spider.Spider;
+import utils.JsonParser;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,6 +29,8 @@ public class MainFrame extends JFrame implements ActionListener {
     private JButton dataBtn;
     private JTextArea cookiesRequestHeadArea;
     private JTextArea dataRequestHeadArea;
+    private JButton formatBtn;
+    private String rowJsonData;
 
     private MainFrame() {
 
@@ -39,7 +42,8 @@ public class MainFrame extends JFrame implements ActionListener {
 
         add(mainPane);
         setTitle("数据采集测试");
-        setBounds(200, 50, 1500, 927);
+        setBounds(30, 50, 800, 650);
+        //setBounds(200, 50, 1500, 927);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
     }
@@ -58,6 +62,7 @@ public class MainFrame extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        String[] btnTextArr = {"格式化","原始数据"};
         //获取动作命令
         String cmdStr = e.getActionCommand();
         //根据动作命令做操作
@@ -77,6 +82,8 @@ public class MainFrame extends JFrame implements ActionListener {
                     backData = Spider.login(cookiesUrl, cookiesRequestHeadStr);
                     cookiesField.setText(backData[0]);
                     dataArea.setText(backData[1]);
+                    rowJsonData = backData[1];
+                    formatBtn.setText(btnTextArr[0]);
                 } catch (Exception ex) {
                     //出错后弹出提示
                     popErrorInfo(ex, "获取cookies异常");
@@ -89,13 +96,28 @@ public class MainFrame extends JFrame implements ActionListener {
                 String dataUrl = "".equals(dataAdd) ? dataAdd : dataAdd + "?" + dataArg;
                 String dataRequestHeadStr = dataRequestHeadArea.getText();
 
-                String data;
                 try {
-                    data = Spider.getData(dataUrl, cookies, dataRequestHeadStr);
-                    dataArea.setText(data);
+                    rowJsonData = Spider.getData(dataUrl, cookies, dataRequestHeadStr);
+                    dataArea.setText(rowJsonData);
+                    formatBtn.setText(btnTextArr[0]);
                 } catch (Exception ex) {
                     //出错后弹出提示
                     popErrorInfo(ex, "获取数据异常");
+                }
+                break;
+            case "format":
+                String btnName = formatBtn.getText();
+                if (btnTextArr[0].equals(btnName)) {
+                    try {
+                        String formatData = JsonParser.format(rowJsonData);
+                        dataArea.setText(formatData);
+                        formatBtn.setText(btnTextArr[1]);
+                    } catch (Exception ex) {
+                        popErrorInfo(ex, "格式化JSON数据失败");
+                    }
+                } else if (btnTextArr[1].equals(btnName)){
+                    dataArea.setText(rowJsonData);
+                    formatBtn.setText(btnTextArr[0]);
                 }
                 break;
             default:
@@ -154,9 +176,11 @@ public class MainFrame extends JFrame implements ActionListener {
         dataAddrField.setActionCommand("data");
         dataArgField.setActionCommand("data");
         dataBtn.setActionCommand("data");
+        formatBtn.setActionCommand("format");
         //添加响应事件
         dataAddrField.addActionListener(this);
         dataArgField.addActionListener(this);
         dataBtn.addActionListener(this);
+        formatBtn.addActionListener(this);
     }
 }
