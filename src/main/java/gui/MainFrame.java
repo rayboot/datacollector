@@ -5,6 +5,9 @@ import spider.Spider;
 import utils.JsonParser;
 
 import javax.swing.*;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,12 +28,23 @@ public class MainFrame extends JFrame implements ActionListener {
     private JTextField dataAddrField;
     private JTextField dataArgField;
     private JTextField cookiesField;
-    private JTextArea dataArea;
+    private JTextPane dataArea;
     private JButton dataBtn;
     private JTextArea cookiesRequestHeadArea;
     private JTextArea dataRequestHeadArea;
     private JButton formatBtn;
     private String rowJsonData;
+    private Color[] colorArr = {
+            new Color(133, 174, 233),
+            new Color(32, 74, 135),
+            new Color(71, 71, 71),
+            new Color(78, 154, 6),
+            new Color(0, 0, 255),
+            new Color(198, 200, 195),
+            new Color(136, 19, 145),
+            new Color(195, 160, 0),
+            new Color(60, 60, 60)
+    };
 
     private MainFrame() {
 
@@ -42,7 +56,7 @@ public class MainFrame extends JFrame implements ActionListener {
 
         add(mainPane);
         setTitle("数据采集测试");
-        setBounds(30, 50, 800, 650);
+        setBounds(33, 50, 800, 650);
         //setBounds(200, 50, 1500, 927);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
@@ -62,7 +76,7 @@ public class MainFrame extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        String[] btnTextArr = {"格式化","原始数据"};
+        String[] btnTextArr = {"格式化", "原始数据"};
         //获取动作命令
         String cmdStr = e.getActionCommand();
         //根据动作命令做操作
@@ -81,7 +95,7 @@ public class MainFrame extends JFrame implements ActionListener {
                     //获取到数据后,放置数据
                     backData = Spider.login(cookiesUrl, cookiesRequestHeadStr);
                     cookiesField.setText(backData[0]);
-                    dataArea.setText(backData[1]);
+                    setRowJsonDataToDataArea(backData[1]);
                     rowJsonData = backData[1];
                     formatBtn.setText(btnTextArr[0]);
                 } catch (Exception ex) {
@@ -98,7 +112,7 @@ public class MainFrame extends JFrame implements ActionListener {
 
                 try {
                     rowJsonData = Spider.getData(dataUrl, cookies, dataRequestHeadStr);
-                    dataArea.setText(rowJsonData);
+                    setRowJsonDataToDataArea(rowJsonData);
                     formatBtn.setText(btnTextArr[0]);
                 } catch (Exception ex) {
                     //出错后弹出提示
@@ -110,14 +124,18 @@ public class MainFrame extends JFrame implements ActionListener {
                 if (btnTextArr[0].equals(btnName)) {
                     try {
                         String formatData = JsonParser.format(rowJsonData);
-                        dataArea.setText(formatData);
+                        insertObjectToDataArea(formatData);
                         formatBtn.setText(btnTextArr[1]);
                     } catch (Exception ex) {
                         popErrorInfo(ex, "格式化JSON数据失败");
                     }
-                } else if (btnTextArr[1].equals(btnName)){
-                    dataArea.setText(rowJsonData);
-                    formatBtn.setText(btnTextArr[0]);
+                } else if (btnTextArr[1].equals(btnName)) {
+                    try {
+                        setRowJsonDataToDataArea(rowJsonData);
+                        formatBtn.setText(btnTextArr[0]);
+                    }catch (Exception ex){
+                        popErrorInfo(ex,"重置原始数据失败");
+                    }
                 }
                 break;
             default:
@@ -182,5 +200,113 @@ public class MainFrame extends JFrame implements ActionListener {
         dataArgField.addActionListener(this);
         dataBtn.addActionListener(this);
         formatBtn.addActionListener(this);
+    }
+
+    /**
+     * 使用给定字符串插入JTextPane,并根据不同的内容使用不同的颜色
+     * @param object 字符串
+     * @throws Exception 异常
+     */
+    private void insertObjectToDataArea(String object) throws Exception{
+        String[] symbolArr = {
+                ":",
+                "\"",
+                ",",
+                "true",
+                "false",
+                "TRUE",
+                "FALSE",
+                "null",
+                "NULL",
+                "{",
+                "[",
+                "}",
+                "]",
+                " "
+        };
+        //根据换行符分割字符串
+        String[] strArr = object.split("\n");
+        dataArea.setText(null);
+        //获取文档风格对象
+        StyledDocument document = dataArea.getStyledDocument();
+        //实例化属性集
+        SimpleAttributeSet attributeSet = new SimpleAttributeSet();
+        for (String str : strArr) {
+            //获取第一个不为" "的字符
+            String firstChar = str.substring(0, 1);
+            int i = 1;
+            while (firstChar.contains(symbolArr[13])) {
+                firstChar = str.substring(i, i + 1);
+                i++;
+            }
+            //检测第一个字符是否是"[","{","}","]",如果是,改变颜色,进入下一次循环
+            if (firstChar.equals(symbolArr[9]) || firstChar.equals(symbolArr[10]) || firstChar.equals
+                    (symbolArr[11]) || firstChar.equals(symbolArr[12])) {
+                StyleConstants.setForeground(attributeSet, colorArr[0]);
+                document.insertString(document.getLength(), str + "\n", attributeSet);
+                continue;
+            }
+            //改变key颜色
+            int colonFlag = str.indexOf(symbolArr[0]);
+            String key = str.substring(0, colonFlag);
+            StyleConstants.setForeground(attributeSet, colorArr[6]);
+            document.insertString(document.getLength(), key, attributeSet);
+
+            //改变":"颜色
+            StyleConstants.setForeground(attributeSet, colorArr[2]);
+            document.insertString(document.getLength(), ":", attributeSet);
+
+            //改变value颜色
+            String value = str.substring(colonFlag + 1);
+            boolean hasComma = value.endsWith(symbolArr[2]);
+            if (hasComma) {
+                value = value.substring(0, value.length() - 1);
+            }
+            //是否是字符串
+            boolean isString = value.substring(0, 1).equals(symbolArr[1]) && value.substring(value.length() - 1).equals
+                    (symbolArr[1]);
+            //是否是布尔变量
+            boolean isBoolean = value.equals(symbolArr[3]) || value.equals(symbolArr[4]) || value.equals(symbolArr[5])
+                    || value.equals(symbolArr[6]);
+            //是否是空
+            boolean isNull = value.equals(symbolArr[7]) || value.equals(symbolArr[8]);
+            if (isString) {
+                StyleConstants.setForeground(attributeSet, colorArr[3]);
+            } else if (isBoolean) {
+                StyleConstants.setForeground(attributeSet, colorArr[7]);
+            } else if (isNull) {
+                StyleConstants.setForeground(attributeSet, colorArr[5]);
+            } else {
+                StyleConstants.setForeground(attributeSet, colorArr[4]);
+            }
+            document.insertString(document.getLength(), value, attributeSet);
+
+            //添加结尾字符串,如果包含","则添上
+            String line = "\n";
+            if (hasComma) {
+                StyleConstants.setForeground(attributeSet, colorArr[2]);
+                line = ",\n";
+            }
+            document.insertString(document.getLength(), line, attributeSet);
+        }
+
+        dataArea.setCaretPosition(0);
+    }
+
+    /**
+     * 设置默认黑色
+     * @param rowStr 字符串
+     * @throws Exception 异常
+     */
+    private void setRowJsonDataToDataArea(String rowStr) throws Exception{
+        //获取文档风格对象
+        StyledDocument document = dataArea.getStyledDocument();
+        //实例化属性集
+        SimpleAttributeSet attributeSet = new SimpleAttributeSet();
+        StyleConstants.setForeground(attributeSet, colorArr[8]);
+        dataArea.setText(null);
+        document.insertString(document.getLength(), rowStr, attributeSet);
+
+        dataArea.setCaretPosition(0);
     }
 }
