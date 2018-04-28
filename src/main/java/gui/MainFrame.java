@@ -2,7 +2,9 @@ package gui;
 
 import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 import spider.Spider;
+import utils.Base64Tool;
 import utils.JsonParser;
+import utils.Security;
 
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
@@ -11,6 +13,9 @@ import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.net.HttpURLConnection;
 
 /**
  * @fileName: MainFrame
@@ -20,20 +25,29 @@ import java.awt.event.ActionListener;
  */
 public class MainFrame extends JFrame implements ActionListener {
     private JPanel mainPane;
-    private JTextField cookiesAddrField;
-    private JTextField cookiesArgField;
-    private JTextField cookiesNameField;
-    private JPasswordField cookiesPwdField;
-    private JButton cookiesBtn;
-    private JTextField dataAddrField;
-    private JTextField dataArgField;
+    private JTextField urlField;
+    private JTextField argField;
+    private JTextField nameField;
+    private JPasswordField pwdField;
+    private JButton verifyBtn;
     private JTextField cookiesField;
-    private JTextPane dataArea;
-    private JButton dataBtn;
-    private JTextArea cookiesRequestHeadArea;
-    private JTextArea dataRequestHeadArea;
+    private JTextPane dataTextPane;
+    private JTextArea requestHeadArea;
     private JButton formatBtn;
+    private JComboBox pwdComboBox;
+    private JComboBox charsetComboBox;
+    private JComboBox nameComboBox;
+    private JComboBox requestMethodComboBox;
+    private Light light;
+    private JPanel lightPane;
+    private JLabel responseCodeLabel;
+    /**
+     * 原始获得未格式化的json数据
+     */
     private String rowJsonData;
+    /**
+     * 自配颜色
+     */
     private Color[] colorArr = {
             new Color(133, 174, 233),
             new Color(32, 74, 135),
@@ -45,11 +59,42 @@ public class MainFrame extends JFrame implements ActionListener {
             new Color(195, 160, 0),
             new Color(60, 60, 60)
     };
+    /**
+     * 格式化按钮文本
+     */
+    private String[] btnTextArr = {"格式化", "原始数据"};
+    /**
+     * 编码方式
+     */
+    private String charset;
+    /**
+     * 请求方法
+     */
+    private String requestMethod;
+    /**
+     * 未加密的用户名
+     */
+    private String rowName;
+    /**
+     * 在用的用户名
+     */
+    private String inUseName;
+    /**
+     * 加密前的密码
+     */
+    private String rowPwd;
+    /**
+     * 在用的密码
+     */
+    private String inUsePwd;
 
-    private MainFrame() {
+    public MainFrame() {
 
-        //设置获取cookies组件
-        setCookiesComponent();
+        charset = charsetComboBox.getItemAt(0).toString();
+        requestMethod = requestMethodComboBox.getItemAt(0).toString();
+
+        //设置配置组件
+        setConfComponent();
 
         //设置获取data组件
         setDataComponent();
@@ -62,81 +107,150 @@ public class MainFrame extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-    public static void main(String... args) {
+    /**
+     * 加密名称
+     */
+    private void encodeName() {
+        int nameIndex = nameComboBox.getSelectedIndex();
+        switch (nameIndex) {
+            case 1:
+                //加密用户名失败使用原始用户名
+                try {
+                    inUseName = Base64Tool.encode(rowName, "UTF-8");
+                } catch (Exception ex) {
+                    popErrorInfo(ex, "加密用户名失败");
+                }
+                break;
+            case 2:
+                try {
+                    inUseName = Security.md5(rowName);
+                } catch (Exception ex) {
+                    popErrorInfo(ex, "加密用户名失败");
+                }
+                break;
+            case 0:
+            default:
+                inUseName = rowName;
+                break;
+        }
+
+    }
+
+    /**
+     * 加密密码
+     */
+    private void encodePassword() {
+
+        int pwdIndex = pwdComboBox.getSelectedIndex();
+        switch (pwdIndex) {
+            case 1:
+                //加密密码名失败使用原始密码
+                try {
+                    inUsePwd = Base64Tool.encode(rowPwd, "UTF-8");
+                } catch (Exception ex) {
+                    popErrorInfo(ex, "加密密码失败");
+                }
+                break;
+            case 2:
+                try {
+                    inUsePwd = Security.md5(rowPwd);
+                } catch (Exception ex) {
+                    popErrorInfo(ex, "加密密码失败");
+                }
+                break;
+            case 0:
+            default:
+                inUsePwd = rowPwd;
+                break;
+        }
+    }
+
+    /**
+     * 模拟访问
+     */
+    private void visit() {
+
+        String urlStr = urlField.getText();
+        String arg = argField.getText();
+        //替换用户名
+        arg = arg.replace("$(USERNAME)", inUseName);
+        //替换密码
+        arg = arg.replace("$(PASSWORD)", inUsePwd);
+        String requestHeadStr = requestHeadArea.getText();
+
+        String[] backData = {"","","404"};
         try {
-            //设置皮肤
-            BeautyEyeLNFHelper.launchBeautyEyeLNF();
-            UIManager.put("RootPane.setupButtonVisible", false);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            new MainFrame();
+            //获取到数据后,放置数据
+            backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod);
+            cookiesField.setText(backData[0]);
+            setRowJsonDataToDataArea(backData[1]);
+            rowJsonData = backData[1];
+            formatBtn.setText(btnTextArr[0]);
+        } catch (Exception ex) {
+            //出错后弹出提示
+            popErrorInfo(ex, "获取数据异常");
+        }
+        int responseCode = Integer.parseInt(backData[2]);
+        lightPane.setVisible(true);
+        responseCodeLabel.setText(responseCode + "");
+        if (responseCode >= HttpURLConnection.HTTP_OK && responseCode <= HttpURLConnection.HTTP_PARTIAL){
+            light.setColor(Color.green);
+        } else {
+            light.setColor(Color.red);
+        }
+    }
+
+    /**
+     * 格式化数据区json数据
+     */
+    private void format() {
+
+        String btnName = formatBtn.getText();
+        if (btnTextArr[0].equals(btnName)) {
+            try {
+                String formatData = JsonParser.format(rowJsonData);
+                insertObjectToDataArea(formatData);
+                formatBtn.setText(btnTextArr[1]);
+            } catch (Exception ex) {
+                popErrorInfo(ex, "格式化JSON数据失败");
+            }
+        } else if (btnTextArr[1].equals(btnName)) {
+            try {
+                setRowJsonDataToDataArea(rowJsonData);
+                formatBtn.setText(btnTextArr[0]);
+            } catch (Exception ex) {
+                popErrorInfo(ex, "重置原始数据失败");
+            }
         }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        String[] btnTextArr = {"格式化", "原始数据"};
+        encodeName();
+        encodePassword();
         //获取动作命令
         String cmdStr = e.getActionCommand();
         //根据动作命令做操作
         switch (cmdStr) {
-            case "cookies":
-                String cookiesAdd = cookiesAddrField.getText();
-                String cookiesArg = cookiesArgField.getText();
-                cookiesArg = "".equals(cookiesArg) ? "" : "&" + cookiesArg;
-                String userName = cookiesNameField.getText();
-                String password = new String(cookiesPwdField.getPassword());
-                String cookiesRequestHeadStr = cookiesRequestHeadArea.getText();
-
-                String cookiesUrl = cookiesAdd + "?userName=" + userName + "&password=" + password + cookiesArg;
-                String[] backData;
-                try {
-                    //获取到数据后,放置数据
-                    backData = Spider.login(cookiesUrl, cookiesRequestHeadStr);
-                    cookiesField.setText(backData[0]);
-                    setRowJsonDataToDataArea(backData[1]);
-                    rowJsonData = backData[1];
-                    formatBtn.setText(btnTextArr[0]);
-                } catch (Exception ex) {
-                    //出错后弹出提示
-                    popErrorInfo(ex, "获取cookies异常");
-                }
+            case "nameEncode":
+                encodeName();
+                break;
+            case "pwdEncode":
+                encodePassword();
+                break;
+            case "charset":
+                int charsetIndex = charsetComboBox.getSelectedIndex();
+                charset = charsetComboBox.getItemAt(charsetIndex).toString();
+                break;
+            case "requestMethod":
+                int requestMethodIndex = requestMethodComboBox.getSelectedIndex();
+                requestMethod = requestMethodComboBox.getItemAt(requestMethodIndex).toString();
                 break;
             case "data":
-                String dataAdd = dataAddrField.getText();
-                String dataArg = dataArgField.getText();
-                String cookies = cookiesField.getText();
-                String dataUrl = "".equals(dataAdd) ? dataAdd : dataAdd + "?" + dataArg;
-                String dataRequestHeadStr = dataRequestHeadArea.getText();
-
-                try {
-                    rowJsonData = Spider.getData(dataUrl, cookies, dataRequestHeadStr);
-                    setRowJsonDataToDataArea(rowJsonData);
-                    formatBtn.setText(btnTextArr[0]);
-                } catch (Exception ex) {
-                    //出错后弹出提示
-                    popErrorInfo(ex, "获取数据异常");
-                }
+                visit();
                 break;
             case "format":
-                String btnName = formatBtn.getText();
-                if (btnTextArr[0].equals(btnName)) {
-                    try {
-                        String formatData = JsonParser.format(rowJsonData);
-                        insertObjectToDataArea(formatData);
-                        formatBtn.setText(btnTextArr[1]);
-                    } catch (Exception ex) {
-                        popErrorInfo(ex, "格式化JSON数据失败");
-                    }
-                } else if (btnTextArr[1].equals(btnName)) {
-                    try {
-                        setRowJsonDataToDataArea(rowJsonData);
-                        formatBtn.setText(btnTextArr[0]);
-                    }catch (Exception ex){
-                        popErrorInfo(ex,"重置原始数据失败");
-                    }
-                }
+                format();
                 break;
             default:
                 break;
@@ -171,43 +285,60 @@ public class MainFrame extends JFrame implements ActionListener {
     /**
      * 设置获取cookies组件
      */
-    private void setCookiesComponent() {
+    private void setConfComponent() {
         //设置动作命令
-        cookiesBtn.setActionCommand("cookies");
-        cookiesAddrField.setActionCommand("cookies");
-        cookiesArgField.setActionCommand("cookies");
-        cookiesNameField.setActionCommand("cookies");
-        cookiesPwdField.setActionCommand("cookies");
+        urlField.setActionCommand("data");
+        argField.setActionCommand("data");
+        nameField.setActionCommand("data");
+        pwdField.setActionCommand("data");
+        verifyBtn.setActionCommand("data");
+        nameComboBox.setActionCommand("nameEncode");
+        pwdComboBox.setActionCommand("pwdEncode");
+        charsetComboBox.setActionCommand("charset");
+        requestMethodComboBox.setActionCommand("requestMethod");
         //添加响应事件
-        cookiesBtn.addActionListener(this);
-        cookiesAddrField.addActionListener(this);
-        cookiesArgField.addActionListener(this);
-        cookiesNameField.addActionListener(this);
-        cookiesPwdField.addActionListener(this);
+        verifyBtn.addActionListener(this);
+        urlField.addActionListener(this);
+        argField.addActionListener(this);
+        nameField.addActionListener(this);
+        pwdField.addActionListener(this);
+        nameComboBox.addActionListener(this);
+        pwdComboBox.addActionListener(this);
+        charsetComboBox.addActionListener(this);
+        requestMethodComboBox.addActionListener(this);
+
+        nameField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                rowName = nameField.getText();
+            }
+        });
+
+        pwdField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                rowPwd = new String(pwdField.getPassword());
+            }
+        });
     }
 
     /**
-     * 设置获取数据组件
+     * 设置数据区组件属性
      */
     private void setDataComponent() {
         //设置动作命令
-        dataAddrField.setActionCommand("data");
-        dataArgField.setActionCommand("data");
-        dataBtn.setActionCommand("data");
         formatBtn.setActionCommand("format");
         //添加响应事件
-        dataAddrField.addActionListener(this);
-        dataArgField.addActionListener(this);
-        dataBtn.addActionListener(this);
         formatBtn.addActionListener(this);
     }
 
     /**
      * 使用给定字符串插入JTextPane,并根据不同的内容使用不同的颜色
+     *
      * @param object 字符串
      * @throws Exception 异常
      */
-    private void insertObjectToDataArea(String object) throws Exception{
+    private void insertObjectToDataArea(String object) throws Exception {
         String[] symbolArr = {
                 ":",
                 "\"",
@@ -226,9 +357,9 @@ public class MainFrame extends JFrame implements ActionListener {
         };
         //根据换行符分割字符串
         String[] strArr = object.split("\n");
-        dataArea.setText(null);
+        dataTextPane.setText(null);
         //获取文档风格对象
-        StyledDocument document = dataArea.getStyledDocument();
+        StyledDocument document = dataTextPane.getStyledDocument();
         //实例化属性集
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
         for (String str : strArr) {
@@ -290,23 +421,24 @@ public class MainFrame extends JFrame implements ActionListener {
             document.insertString(document.getLength(), line, attributeSet);
         }
 
-        dataArea.setCaretPosition(0);
+        dataTextPane.setCaretPosition(0);
     }
 
     /**
      * 设置默认黑色
+     *
      * @param rowStr 字符串
      * @throws Exception 异常
      */
-    private void setRowJsonDataToDataArea(String rowStr) throws Exception{
+    private void setRowJsonDataToDataArea(String rowStr) throws Exception {
         //获取文档风格对象
-        StyledDocument document = dataArea.getStyledDocument();
+        StyledDocument document = dataTextPane.getStyledDocument();
         //实例化属性集
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
         StyleConstants.setForeground(attributeSet, colorArr[8]);
-        dataArea.setText(null);
+        dataTextPane.setText(null);
         document.insertString(document.getLength(), rowStr, attributeSet);
 
-        dataArea.setCaretPosition(0);
+        dataTextPane.setCaretPosition(0);
     }
 }
