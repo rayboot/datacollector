@@ -12,6 +12,7 @@ public class JsonParser {
 
     /**
      * 格式化Json数据
+     *
      * @param jsonStr 原始json字符串
      * @return 格式化后的json字符串
      */

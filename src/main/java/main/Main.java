@@ -3,7 +3,7 @@ package main;
 import gui.MainFrame;
 import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 
-import javax.swing.UIManager;
+import javax.swing.*;
 
 /**
  * @fileName: Main

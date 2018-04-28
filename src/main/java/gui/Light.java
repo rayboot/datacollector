@@ -13,7 +13,7 @@ public class Light extends JPanel {
 
     private Color color;
 
-    void setColor(Color color){
+    void setColor(Color color) {
         this.color = color;
         updateUI();
     }
@@ -27,6 +27,6 @@ public class Light extends JPanel {
     @Override
     public void paint(Graphics g) {
         g.setColor(color);
-        g.fillOval(0,0,10,10);
+        g.fillOval(0, 0, 10, 10);
     }
 }

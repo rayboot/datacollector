@@ -1,6 +1,5 @@
 package gui;
 
-import org.jb2011.lnf.beautyeye.BeautyEyeLNFHelper;
 import spider.Spider;
 import utils.Base64Tool;
 import utils.JsonParser;
@@ -178,7 +177,7 @@ public class MainFrame extends JFrame implements ActionListener {
         arg = arg.replace("$(PASSWORD)", inUsePwd);
         String requestHeadStr = requestHeadArea.getText();
 
-        String[] backData = {"","","404"};
+        String[] backData = {"", "", "404"};
         try {
             //获取到数据后,放置数据
             backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod);
@@ -193,7 +192,7 @@ public class MainFrame extends JFrame implements ActionListener {
         int responseCode = Integer.parseInt(backData[2]);
         lightPane.setVisible(true);
         responseCodeLabel.setText(responseCode + "");
-        if (responseCode >= HttpURLConnection.HTTP_OK && responseCode <= HttpURLConnection.HTTP_PARTIAL){
+        if (responseCode >= HttpURLConnection.HTTP_OK && responseCode <= HttpURLConnection.HTTP_PARTIAL) {
             light.setColor(Color.green);
         } else {
             light.setColor(Color.red);
