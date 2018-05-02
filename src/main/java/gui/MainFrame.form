@@ -27,7 +27,7 @@
             <properties/>
             <border type="none"/>
             <children>
-              <grid id="7c5b9" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+              <grid id="7c5b9" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints border-constraint="North"/>
                 <properties/>
@@ -40,6 +40,14 @@
                       </grid>
                     </constraints>
                     <properties/>
+                  </component>
+                  <component id="151a" class="javax.swing.JButton" binding="cookieStatusBtn">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <text value=""/>
+                    </properties>
                   </component>
                 </children>
               </grid>
@@ -252,7 +260,7 @@
                     <constraints/>
                     <properties>
                       <lineWrap value="true"/>
-                      <text value="Accept: application/json, text/javascript, */*; q=0.01&#10;Accept-Encoding: gzip, deflate&#10;Accept-Language: zh-CN,zh;q=0.9&#10;Connection: keep-alive&#10;Content-Length: 85&#10;Content-Type: application/x-www-form-urlencoded&#10;Host: &#10;Origin: &#10;Referer: &#10;User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36&#10;X-Requested-With: XMLHttpRequest"/>
+                      <text value="Accept: application/json, text/javascript, */*; q=0.01&#10;Accept-Encoding: gzip, deflate&#10;Accept-Language: zh-CN,zh;q=0.9&#10;Connection: keep-alive&#10;Content-Type: application/x-www-form-urlencoded&#10;User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36&#10;X-Requested-With: XMLHttpRequest"/>
                       <wrapStyleWord value="true"/>
                     </properties>
                   </component>
@@ -267,7 +275,7 @@
                   <text value="设置:"/>
                 </properties>
               </component>
-              <grid id="dc139" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+              <grid id="dc139" layout-manager="GridLayoutManager" row-count="3" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints>
                   <grid row="4" column="1" row-span="1" col-span="2" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -314,6 +322,26 @@
                       <model>
                         <item value="POST"/>
                         <item value="GET"/>
+                      </model>
+                    </properties>
+                  </component>
+                  <component id="70b2c" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <font style="1"/>
+                      <text value="重 定 向:"/>
+                    </properties>
+                  </component>
+                  <component id="1ed23" class="javax.swing.JComboBox" binding="redirectedComboBox">
+                    <constraints>
+                      <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <model>
+                        <item value="是"/>
+                        <item value="否"/>
                       </model>
                     </properties>
                   </component>

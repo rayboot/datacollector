@@ -5,6 +5,7 @@ import utils.Base64Tool;
 import utils.JsonParser;
 import utils.Security;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -14,6 +15,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.net.HttpURLConnection;
 
 /**
@@ -40,6 +43,8 @@ public class MainFrame extends JFrame implements ActionListener {
     private Light light;
     private JPanel lightPane;
     private JLabel responseCodeLabel;
+    private JButton cookieStatusBtn;
+    private JComboBox redirectedComboBox;
     /**
      * 原始获得未格式化的json数据
      */
@@ -86,8 +91,53 @@ public class MainFrame extends JFrame implements ActionListener {
      * 在用的密码
      */
     private String inUsePwd;
+    /**
+     * cookies是否可以被修改
+     */
+    private boolean isCookieLocked;
+    /**
+     * 是否重定向
+     */
+    private boolean isRedirected;
+    /**
+     * 根目录
+     */
+    private String rootPath;
+    private String[] instructionArr = {"说明","关于"};
 
     public MainFrame() {
+
+        try {
+            rootPath = MainFrame.class.getResource("MainFrame.class").getPath();
+            rootPath = rootPath.substring(1, rootPath.lastIndexOf("/"));
+            rootPath = rootPath.substring(0, rootPath.lastIndexOf("/"));
+        } catch (Exception e) {
+            popErrorInfo(e, "获取根目录失败");
+        }
+
+        //添加菜单栏
+        JMenuBar menuBar = new JMenuBar();
+        JMenu instructionMenu = new JMenu("帮助");
+        menuBar.add(instructionMenu);
+        for (String jMenuItemStr : instructionArr) {
+            JMenuItem jMenuItem = new JMenuItem(jMenuItemStr);
+            jMenuItem.setActionCommand("MenuBar");
+            jMenuItem.addActionListener(this);
+            try {
+                addImageToBtn(jMenuItem, rootPath + "/images/help.png", 16, 16);
+            } catch (Exception ignore) {
+            }
+            instructionMenu.add(jMenuItem);
+        }
+        setJMenuBar(menuBar);
+
+        //设置cookies按钮默认图片
+        try {
+            addImageToBtn(cookieStatusBtn, rootPath + "/images/unlock - 1.png", 17, 17);
+        } catch (Exception e) {
+            e.printStackTrace();
+            cookieStatusBtn.setText("未锁定");
+        }
 
         charset = charsetComboBox.getItemAt(0).toString();
         requestMethod = requestMethodComboBox.getItemAt(0).toString();
@@ -104,6 +154,87 @@ public class MainFrame extends JFrame implements ActionListener {
         //setBounds(200, 50, 1500, 927);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        encodeName();
+        encodePassword();
+        //获取动作命令
+        String cmdStr = e.getActionCommand();
+        //根据动作命令做操作
+        switch (cmdStr) {
+            case "nameEncode":
+                encodeName();
+                break;
+            case "pwdEncode":
+                encodePassword();
+                break;
+            case "charset":
+                int charsetIndex = charsetComboBox.getSelectedIndex();
+                if (charsetIndex != 3) {
+                    charset = charsetComboBox.getItemAt(charsetIndex).toString();
+                }else{
+                    charset = JOptionPane.showInputDialog(this,"请输入字符编码方式", "编码方式",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+                break;
+            case "requestMethod":
+                int requestMethodIndex = requestMethodComboBox.getSelectedIndex();
+                requestMethod = requestMethodComboBox.getItemAt(requestMethodIndex).toString();
+                break;
+            case "redirect":
+                int redirectedIndex = redirectedComboBox.getSelectedIndex();
+                isRedirected = redirectedIndex == 1;
+                break;
+            case "data":
+                visit();
+                break;
+            case "format":
+                format();
+                break;
+            case "cookieStatus":
+                if (isCookieLocked) {
+                    try {
+                        addImageToBtn(cookieStatusBtn, rootPath + "/images/unlock - 1.png", 17, 17);
+                    } catch (Exception ex) {
+                        cookieStatusBtn.setText("未锁定");
+                    } finally {
+                        isCookieLocked = false;
+                        cookiesField.setEditable(true);
+                    }
+                } else {
+                    try {
+                        addImageToBtn(cookieStatusBtn, rootPath + "/images/lock - 1.png", 17, 17);
+                    } catch (Exception ex) {
+                        cookieStatusBtn.setText("已锁定");
+                    } finally {
+                        isCookieLocked = true;
+                        cookiesField.setEditable(false);
+                    }
+                }
+                break;
+            case "MenuBar":
+                JMenuItem item = (JMenuItem)e.getSource();
+                String itemStr = item.getText();
+                if (instructionArr[0].equals(itemStr)){
+                    InstructionDialog dialog = new InstructionDialog();
+                    dialog.pack();
+                    dialog.setVisible(true);
+                }else if (instructionArr[1].equals(itemStr)){
+                    ImageIcon imageIcon = new ImageIcon();
+                    try {
+                        BufferedImage bufferedImage = ImageIO.read(new File(rootPath + "/images/dog - 1.jpg"));
+                        Image image = bufferedImage.getScaledInstance(50,50,Image.SCALE_SMOOTH);
+                        imageIcon.setImage(image);
+                    }catch (Exception ignore){}
+                    JOptionPane.showMessageDialog(this,"作者: Han\n版本: v1.0\n更新时间: 2018年5月2日",
+                            "关于",JOptionPane.INFORMATION_MESSAGE,imageIcon);
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -171,31 +302,53 @@ public class MainFrame extends JFrame implements ActionListener {
 
         String urlStr = urlField.getText();
         String arg = argField.getText();
-        //替换用户名
-        arg = arg.replace("$(USERNAME)", inUseName);
-        //替换密码
-        arg = arg.replace("$(PASSWORD)", inUsePwd);
+        if (urlStr.isEmpty()) {
+            popErrorInfo(new IllegalArgumentException("没有输入URL"), "没有输入url");
+            return;
+        }
+        try {
+            //替换用户名
+            arg = arg.replace("$(USERNAME)", inUseName);
+            //替换密码
+            arg = arg.replace("$(PASSWORD)", inUsePwd);
+        } catch (NullPointerException ignore) {
+        } catch (Exception e) {
+            popErrorInfo(e, "用户名或密码替换失败");
+            return;
+        }
         String requestHeadStr = requestHeadArea.getText();
+        String cookies = "";
+        if (isCookieLocked) {
+            cookies = cookiesField.getText();
+        }
 
         String[] backData = {"", "", "404"};
         try {
             //获取到数据后,放置数据
-            backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod);
-            cookiesField.setText(backData[0]);
+            backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod, cookies, isRedirected);
+            if (!isCookieLocked) {
+                cookiesField.setText(backData[0]);
+            }
             setRowJsonDataToDataArea(backData[1]);
             rowJsonData = backData[1];
             formatBtn.setText(btnTextArr[0]);
         } catch (Exception ex) {
             //出错后弹出提示
             popErrorInfo(ex, "获取数据异常");
+            return;
         }
         int responseCode = Integer.parseInt(backData[2]);
         lightPane.setVisible(true);
         responseCodeLabel.setText(responseCode + "");
         if (responseCode >= HttpURLConnection.HTTP_OK && responseCode <= HttpURLConnection.HTTP_PARTIAL) {
             light.setColor(Color.green);
-        } else {
+        } else if (responseCode >= HttpURLConnection.HTTP_MULT_CHOICE && responseCode <= HttpURLConnection
+                .HTTP_USE_PROXY){
+            light.setColor(Color.orange);
+        }else if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST && responseCode <= HttpURLConnection.HTTP_UNSUPPORTED_TYPE){
             light.setColor(Color.red);
+        } else{
+            light.setColor(Color.gray);
         }
     }
 
@@ -220,39 +373,6 @@ public class MainFrame extends JFrame implements ActionListener {
             } catch (Exception ex) {
                 popErrorInfo(ex, "重置原始数据失败");
             }
-        }
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        encodeName();
-        encodePassword();
-        //获取动作命令
-        String cmdStr = e.getActionCommand();
-        //根据动作命令做操作
-        switch (cmdStr) {
-            case "nameEncode":
-                encodeName();
-                break;
-            case "pwdEncode":
-                encodePassword();
-                break;
-            case "charset":
-                int charsetIndex = charsetComboBox.getSelectedIndex();
-                charset = charsetComboBox.getItemAt(charsetIndex).toString();
-                break;
-            case "requestMethod":
-                int requestMethodIndex = requestMethodComboBox.getSelectedIndex();
-                requestMethod = requestMethodComboBox.getItemAt(requestMethodIndex).toString();
-                break;
-            case "data":
-                visit();
-                break;
-            case "format":
-                format();
-                break;
-            default:
-                break;
         }
     }
 
@@ -295,6 +415,7 @@ public class MainFrame extends JFrame implements ActionListener {
         pwdComboBox.setActionCommand("pwdEncode");
         charsetComboBox.setActionCommand("charset");
         requestMethodComboBox.setActionCommand("requestMethod");
+        redirectedComboBox.setActionCommand("redirect");
         //添加响应事件
         verifyBtn.addActionListener(this);
         urlField.addActionListener(this);
@@ -305,6 +426,7 @@ public class MainFrame extends JFrame implements ActionListener {
         pwdComboBox.addActionListener(this);
         charsetComboBox.addActionListener(this);
         requestMethodComboBox.addActionListener(this);
+        redirectedComboBox.addActionListener(this);
 
         nameField.addKeyListener(new KeyAdapter() {
             @Override
@@ -327,8 +449,10 @@ public class MainFrame extends JFrame implements ActionListener {
     private void setDataComponent() {
         //设置动作命令
         formatBtn.setActionCommand("format");
+        cookieStatusBtn.setActionCommand("cookieStatus");
         //添加响应事件
         formatBtn.addActionListener(this);
+        cookieStatusBtn.addActionListener(this);
     }
 
     /**
@@ -439,5 +563,23 @@ public class MainFrame extends JFrame implements ActionListener {
         document.insertString(document.getLength(), rowStr, attributeSet);
 
         dataTextPane.setCaretPosition(0);
+    }
+
+    /**
+     * 给指定按钮添加指定尺寸的图片
+     *
+     * @param button       添加图片的按钮
+     * @param filePath     图片路径
+     * @param scaledWidth  缩放宽度
+     * @param scaledHeight 缩放高度
+     * @throws Exception 抛出异常
+     */
+    private void addImageToBtn(AbstractButton button, String filePath, int scaledWidth, int scaledHeight) throws
+            Exception {
+        BufferedImage bufferedImage = ImageIO.read(new File(filePath));
+        Image image = bufferedImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
+        ImageIcon imageIcon = new ImageIcon();
+        imageIcon.setImage(image);
+        button.setIcon(imageIcon);
     }
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="gui.InstructionDialog">
+  <grid id="cbd77" binding="contentPane" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="10" left="10" bottom="10" right="10"/>
+    <constraints>
+      <xy x="48" y="54" width="436" height="297"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="94766" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <hspacer id="98af6">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </hspacer>
+          <component id="bb454" class="javax.swing.JButton" binding="okBtn">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="OK"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="e3588" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <scrollpane id="52aaf">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="5f6ff" class="javax.swing.JLabel" default-binding="true">
+                <constraints/>
+                <properties>
+                  <horizontalAlignment value="2"/>
+                  <horizontalTextPosition value="2"/>
+                  <text value="&lt;html&gt;1.账号,密码&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;模拟登陆需要输入,可以选择分别的加密方式&lt;br&gt;&#10;2.地址&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;访问目标URL&lt;br&gt;&#10;3.参数&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(1)模拟登陆&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;在需要输入用户名和密码的地方分别用$(USERNAME)和$(PASSWORD)代替&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(2)采集数据&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;正常输入需要的参数&lt;br&gt;&#10;4.设置&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(1)编码方式&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;根据目标url采用的编码方式选择,也可以选择custom自己设置&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(2)请求方法&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;根据目标url采用的请求方法选择是POST或者GET&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(3)重定向&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;选择即将建立的连接是否支持重定向&lt;br&gt;&#10;5.请求头&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;模拟浏览器,欺骗服务器,以免服务器过滤请求&lt;br&gt;&#10;6.cookies&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;模拟登陆获取的cookies,获取数据时需要使用这里的cookies&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;cookies有未锁定和已锁定两种状态&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;(1)未锁定&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;a.可以随意修改cookies输入框中的字符串&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;b.确定时cookies不会被读取&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;(2)已锁定&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;a.不可以修改cookies输入框中的字符串&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;b.点击确定时cookies会被读取&lt;br&gt;&#10;7.返回数据&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(1)格式化&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;格式化JSON格式的字符串,使其方便查看&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;(2)数据区&lt;br&gt;&#10;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;emsp;&amp;&amp;&amp;emsp;从目标URL读取的JSON数据&lt;br&gt;&#10;&lt;/html&gt;"/>
+                  <verticalAlignment value="1"/>
+                  <verticalTextPosition value="1"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>

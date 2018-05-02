@@ -17,15 +17,24 @@ import java.util.Objects;
 public class Spider {
     /**
      * 使用指定地址登录
-     *
-     * @param urlStr 目标地址
-     * @return 1.cookies;
-     * 2.返回数据
+     * @param urlStr 目标url
+     * @param arg 参数
+     * @param requestHead 请求头
+     * @param charset 编码方式
+     * @param requestMethod 请求方法
+     * @param cookies cookies
+     * @param isRedirect 是否重定向
+     * @return 1.获取的cookies
+     *          2.目标url返回的数据
+     *          3.目标url响应状态
      * @throws Exception 向上抛异常
      */
-    public static String[] getData(String urlStr, String arg, String requestHead, String charset, String requestMethod)
+    public static String[] getData(String urlStr, String arg, String requestHead, String charset, String
+            requestMethod,String cookies,boolean isRedirect)
             throws Exception {
 
+        System.out.println("URL:" + urlStr + "\n参数:" + arg + "\n请求头:" + requestHead + "\n字符编码:" + charset + "\n请求方法:"
+                + requestMethod + "\ncookies:" + cookies + "\n是否重定向:" + isRedirect + "\n");
         String[] requestMethodArr = {"GET", "POST"};
         String[] backData = new String[3];
         BufferedReader reader = null;
@@ -46,6 +55,8 @@ public class Spider {
                     connection.setRequestProperty(arr[0], arr[1]);
                 }
             }
+            connection.setRequestProperty("Cookie", cookies);
+            connection.setInstanceFollowRedirects(isRedirect);
             if (requestMethodArr[1].equals(requestMethod)) {
                 connection.setDoOutput(true);
                 outputStream = connection.getOutputStream();
