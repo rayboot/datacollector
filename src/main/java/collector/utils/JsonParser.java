@@ -1,4 +1,4 @@
-package utils;
+package collector.utils;
 
 import java.util.*;
 

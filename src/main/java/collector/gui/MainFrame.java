@@ -1,9 +1,9 @@
-package gui;
+package collector.gui;
 
-import spider.Spider;
-import utils.Base64Tool;
-import utils.JsonParser;
-import utils.Security;
+import collector.spider.Spider;
+import collector.utils.Base64Tool;
+import collector.utils.JsonParser;
+import collector.utils.Security;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -11,13 +11,10 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * @fileName: MainFrame
@@ -45,6 +42,8 @@ public class MainFrame extends JFrame implements ActionListener {
     private JLabel responseCodeLabel;
     private JButton cookieStatusBtn;
     private JComboBox redirectedComboBox;
+    private JTextField connectTimeField;
+    private JTextField readTimeField;
     /**
      * 原始获得未格式化的json数据
      */
@@ -100,20 +99,15 @@ public class MainFrame extends JFrame implements ActionListener {
      */
     private boolean isRedirected;
     /**
-     * 根目录
+     * 帮助菜单栏
      */
-    private String rootPath;
-    private String[] instructionArr = {"说明","关于"};
+    private String[] instructionArr = {"说明", "关于"};
+    /**
+     * 字符类型下拉框中的自定义选项
+     */
+    private final static int CHARSET_CUSTOM = 3;
 
     public MainFrame() {
-
-        try {
-            rootPath = MainFrame.class.getResource("MainFrame.class").getPath();
-            rootPath = rootPath.substring(1, rootPath.lastIndexOf("/"));
-            rootPath = rootPath.substring(0, rootPath.lastIndexOf("/"));
-        } catch (Exception e) {
-            popErrorInfo(e, "获取根目录失败");
-        }
 
         //添加菜单栏
         JMenuBar menuBar = new JMenuBar();
@@ -124,8 +118,10 @@ public class MainFrame extends JFrame implements ActionListener {
             jMenuItem.setActionCommand("MenuBar");
             jMenuItem.addActionListener(this);
             try {
-                addImageToBtn(jMenuItem, rootPath + "/images/help.png", 16, 16);
-            } catch (Exception ignore) {
+                Icon icon = imageScaleToIcon("/images/help.png", 16, 16);
+                jMenuItem.setIcon(icon);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             instructionMenu.add(jMenuItem);
         }
@@ -133,7 +129,9 @@ public class MainFrame extends JFrame implements ActionListener {
 
         //设置cookies按钮默认图片
         try {
-            addImageToBtn(cookieStatusBtn, rootPath + "/images/unlock - 1.png", 17, 17);
+            Icon icon = imageScaleToIcon("/images/unlock - 1.png", 17, 17);
+            cookieStatusBtn.setIcon(icon);
+            cookieStatusBtn.setText(null);
         } catch (Exception e) {
             e.printStackTrace();
             cookieStatusBtn.setText("未锁定");
@@ -158,8 +156,6 @@ public class MainFrame extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        encodeName();
-        encodePassword();
         //获取动作命令
         String cmdStr = e.getActionCommand();
         //根据动作命令做操作
@@ -172,10 +168,10 @@ public class MainFrame extends JFrame implements ActionListener {
                 break;
             case "charset":
                 int charsetIndex = charsetComboBox.getSelectedIndex();
-                if (charsetIndex != 3) {
+                if (charsetIndex != CHARSET_CUSTOM) {
                     charset = charsetComboBox.getItemAt(charsetIndex).toString();
-                }else{
-                    charset = JOptionPane.showInputDialog(this,"请输入字符编码方式", "编码方式",
+                } else {
+                    charset = JOptionPane.showInputDialog(this, "请输入字符编码方式", "编码方式",
                             JOptionPane.INFORMATION_MESSAGE);
                 }
                 break;
@@ -196,7 +192,9 @@ public class MainFrame extends JFrame implements ActionListener {
             case "cookieStatus":
                 if (isCookieLocked) {
                     try {
-                        addImageToBtn(cookieStatusBtn, rootPath + "/images/unlock - 1.png", 17, 17);
+                        Icon icon = imageScaleToIcon("/images/unlock - 1.png", 17, 17);
+                        cookieStatusBtn.setIcon(icon);
+                        cookieStatusBtn.setText(null);
                     } catch (Exception ex) {
                         cookieStatusBtn.setText("未锁定");
                     } finally {
@@ -205,7 +203,9 @@ public class MainFrame extends JFrame implements ActionListener {
                     }
                 } else {
                     try {
-                        addImageToBtn(cookieStatusBtn, rootPath + "/images/lock - 1.png", 17, 17);
+                        Icon icon = imageScaleToIcon("/images/lock - 1.png", 17, 17);
+                        cookieStatusBtn.setIcon(icon);
+                        cookieStatusBtn.setText(null);
                     } catch (Exception ex) {
                         cookieStatusBtn.setText("已锁定");
                     } finally {
@@ -215,21 +215,22 @@ public class MainFrame extends JFrame implements ActionListener {
                 }
                 break;
             case "MenuBar":
-                JMenuItem item = (JMenuItem)e.getSource();
+                JMenuItem item = (JMenuItem) e.getSource();
                 String itemStr = item.getText();
-                if (instructionArr[0].equals(itemStr)){
+                if (instructionArr[0].equals(itemStr)) {
                     InstructionDialog dialog = new InstructionDialog();
                     dialog.pack();
                     dialog.setVisible(true);
-                }else if (instructionArr[1].equals(itemStr)){
+                } else if (instructionArr[1].equals(itemStr)) {
                     ImageIcon imageIcon = new ImageIcon();
                     try {
-                        BufferedImage bufferedImage = ImageIO.read(new File(rootPath + "/images/dog - 1.jpg"));
-                        Image image = bufferedImage.getScaledInstance(50,50,Image.SCALE_SMOOTH);
-                        imageIcon.setImage(image);
-                    }catch (Exception ignore){}
-                    JOptionPane.showMessageDialog(this,"作者: Han\n版本: v1.0\n更新时间: 2018年5月2日",
-                            "关于",JOptionPane.INFORMATION_MESSAGE,imageIcon);
+                        ImageIcon icon = imageScaleToIcon("/images/dog - 1.jpg", 50, 50);
+                        imageIcon.setImage(icon.getImage());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    JOptionPane.showMessageDialog(this, "作者: Han\n版本: v1.0\n更新时间: 2018年5月2日",
+                            "关于", JOptionPane.INFORMATION_MESSAGE, imageIcon);
                 }
                 break;
             default:
@@ -321,11 +322,15 @@ public class MainFrame extends JFrame implements ActionListener {
         if (isCookieLocked) {
             cookies = cookiesField.getText();
         }
+        String connectTimeStr = connectTimeField.getText();
+        int connectTime = Integer.parseInt(connectTimeStr);
+        String readTimeStr = readTimeField.getText();
+        int readTime = Integer.parseInt(readTimeStr);
 
-        String[] backData = {"", "", "404"};
+        String[] backData;
         try {
             //获取到数据后,放置数据
-            backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod, cookies, isRedirected);
+            backData = Spider.getData(urlStr, arg, requestHeadStr, charset, requestMethod, cookies, isRedirected, connectTime, readTime);
             if (!isCookieLocked) {
                 cookiesField.setText(backData[0]);
             }
@@ -343,11 +348,11 @@ public class MainFrame extends JFrame implements ActionListener {
         if (responseCode >= HttpURLConnection.HTTP_OK && responseCode <= HttpURLConnection.HTTP_PARTIAL) {
             light.setColor(Color.green);
         } else if (responseCode >= HttpURLConnection.HTTP_MULT_CHOICE && responseCode <= HttpURLConnection
-                .HTTP_USE_PROXY){
+                .HTTP_USE_PROXY) {
             light.setColor(Color.orange);
-        }else if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST && responseCode <= HttpURLConnection.HTTP_UNSUPPORTED_TYPE){
+        } else if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST && responseCode <= HttpURLConnection.HTTP_UNSUPPORTED_TYPE) {
             light.setColor(Color.red);
-        } else{
+        } else {
             light.setColor(Color.gray);
         }
     }
@@ -428,17 +433,38 @@ public class MainFrame extends JFrame implements ActionListener {
         requestMethodComboBox.addActionListener(this);
         redirectedComboBox.addActionListener(this);
 
-        nameField.addKeyListener(new KeyAdapter() {
+        connectTimeField.setDocument(new NumberLimitedDocument());
+        readTimeField.setDocument(new NumberLimitedDocument());
+
+        nameField.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+            }
+
             @Override
             public void keyReleased(KeyEvent e) {
                 rowName = nameField.getText();
+                inUseName = rowName;
             }
         });
 
         pwdField.addKeyListener(new KeyAdapter() {
             @Override
+            public void keyTyped(KeyEvent e) {
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+            }
+
+            @Override
             public void keyReleased(KeyEvent e) {
                 rowPwd = new String(pwdField.getPassword());
+                inUsePwd = rowPwd;
             }
         });
     }
@@ -485,11 +511,12 @@ public class MainFrame extends JFrame implements ActionListener {
         StyledDocument document = dataTextPane.getStyledDocument();
         //实例化属性集
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
+        String endChar = symbolArr[13];
         for (String str : strArr) {
             //获取第一个不为" "的字符
             String firstChar = str.substring(0, 1);
             int i = 1;
-            while (firstChar.contains(symbolArr[13])) {
+            while (firstChar.contains(endChar)) {
                 firstChar = str.substring(i, i + 1);
                 i++;
             }
@@ -566,20 +593,22 @@ public class MainFrame extends JFrame implements ActionListener {
     }
 
     /**
-     * 给指定按钮添加指定尺寸的图片
+     * 将图片变化大小并转换为icon对象
      *
-     * @param button       添加图片的按钮
      * @param filePath     图片路径
-     * @param scaledWidth  缩放宽度
-     * @param scaledHeight 缩放高度
+     * @param scaledWidth  宽度
+     * @param scaledHeight 高度
+     * @return icon
      * @throws Exception 抛出异常
      */
-    private void addImageToBtn(AbstractButton button, String filePath, int scaledWidth, int scaledHeight) throws
-            Exception {
-        BufferedImage bufferedImage = ImageIO.read(new File(filePath));
+    private ImageIcon imageScaleToIcon(String filePath, int scaledWidth, int scaledHeight) throws Exception {
+
+        URL url = this.getClass().getResource(filePath);
+        BufferedImage bufferedImage = ImageIO.read(url);
         Image image = bufferedImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
         ImageIcon imageIcon = new ImageIcon();
         imageIcon.setImage(image);
-        button.setIcon(imageIcon);
+
+        return imageIcon;
     }
 }

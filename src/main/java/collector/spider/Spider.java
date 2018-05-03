@@ -1,4 +1,4 @@
-package spider;
+package collector.spider;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -17,24 +17,26 @@ import java.util.Objects;
 public class Spider {
     /**
      * 使用指定地址登录
-     * @param urlStr 目标url
-     * @param arg 参数
-     * @param requestHead 请求头
-     * @param charset 编码方式
+     *
+     * @param urlStr        目标url
+     * @param arg           参数
+     * @param requestHead   请求头
+     * @param charset       编码方式
      * @param requestMethod 请求方法
-     * @param cookies cookies
-     * @param isRedirect 是否重定向
+     * @param cookies       cookies
+     * @param isRedirect    是否重定向
      * @return 1.获取的cookies
-     *          2.目标url返回的数据
-     *          3.目标url响应状态
+     * 2.目标url返回的数据
+     * 3.目标url响应状态
      * @throws Exception 向上抛异常
      */
     public static String[] getData(String urlStr, String arg, String requestHead, String charset, String
-            requestMethod,String cookies,boolean isRedirect)
+            requestMethod, String cookies, boolean isRedirect, int connectTime, int readTime)
             throws Exception {
 
         System.out.println("URL:" + urlStr + "\n参数:" + arg + "\n请求头:" + requestHead + "\n字符编码:" + charset + "\n请求方法:"
-                + requestMethod + "\ncookies:" + cookies + "\n是否重定向:" + isRedirect + "\n");
+                + requestMethod + "\ncookies:" + cookies + "\n是否重定向:" + isRedirect + "\n连接超时:" + connectTime +
+                "毫秒\n读取超时:" + readTime + "毫秒\n");
         String[] requestMethodArr = {"GET", "POST"};
         String[] backData = new String[3];
         BufferedReader reader = null;
@@ -46,7 +48,8 @@ public class Spider {
 
         try {
             HttpURLConnection connection = (HttpURLConnection) (new URL(urlStr).openConnection());
-            connection.setConnectTimeout(1000);
+            connection.setConnectTimeout(connectTime);
+            connection.setReadTimeout(readTime);
             //设置请求头
             String[] requestHeadArr = requestHead.split("\n");
             for (String requestProperty : requestHeadArr) {
