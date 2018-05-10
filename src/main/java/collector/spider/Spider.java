@@ -70,6 +70,8 @@ public class Spider {
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), charset));
             //获取cookies
             backData[0] = connection.getHeaderField("set-Cookie");
+            System.out.println(connection.getHeaderFields());
+            System.out.println();
             //获取状态码
             backData[2] = connection.getResponseCode() + "";
 

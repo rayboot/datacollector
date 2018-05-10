@@ -15,6 +15,9 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.InvalidParameterException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @fileName: MainFrame
@@ -23,6 +26,14 @@ import java.net.URL;
  * @dscription:
  */
 public class MainFrame extends JFrame implements ActionListener {
+    /**
+     * 字符类型下拉框中的自定义选项
+     */
+    private final static int CHARSET_CUSTOM = 3;
+    /**
+     * 数据保存路径
+     */
+    private static String savePath;
     private JPanel mainPane;
     private JTextField urlField;
     private JTextField argField;
@@ -44,6 +55,7 @@ public class MainFrame extends JFrame implements ActionListener {
     private JComboBox redirectedComboBox;
     private JTextField connectTimeField;
     private JTextField readTimeField;
+    private JButton saveBtn;
     /**
      * 原始获得未格式化的json数据
      */
@@ -65,7 +77,7 @@ public class MainFrame extends JFrame implements ActionListener {
     /**
      * 格式化按钮文本
      */
-    private String[] btnTextArr = {"格式化", "原始数据"};
+    private String[] btnTextArr = {"格式数据", "原始数据"};
     /**
      * 编码方式
      */
@@ -97,20 +109,17 @@ public class MainFrame extends JFrame implements ActionListener {
     /**
      * 是否重定向
      */
-    private boolean isRedirected;
+    private boolean isRedirected = true;
     /**
      * 帮助菜单栏
      */
     private String[] instructionArr = {"说明", "关于"};
-    /**
-     * 字符类型下拉框中的自定义选项
-     */
-    private final static int CHARSET_CUSTOM = 3;
 
     public MainFrame() {
 
         //添加菜单栏
         JMenuBar menuBar = new JMenuBar();
+
         JMenu instructionMenu = new JMenu("帮助");
         menuBar.add(instructionMenu);
         for (String jMenuItemStr : instructionArr) {
@@ -125,6 +134,14 @@ public class MainFrame extends JFrame implements ActionListener {
             }
             instructionMenu.add(jMenuItem);
         }
+
+        JMenu testMenu = new JMenu("测试");
+        menuBar.add(testMenu);
+        JMenuItem loginItem = new JMenuItem("登录测试");
+        loginItem.setActionCommand("loginTest");
+        loginItem.addActionListener(this);
+        testMenu.add(loginItem);
+
         setJMenuBar(menuBar);
 
         //设置cookies按钮默认图片
@@ -154,6 +171,39 @@ public class MainFrame extends JFrame implements ActionListener {
         setVisible(true);
     }
 
+    static String getSavePath() {
+        return savePath;
+    }
+
+    static void setSavePath(String savePath) {
+        MainFrame.savePath = savePath;
+    }
+
+    /**
+     * 弹出异常
+     *
+     * @param e 异常对象
+     */
+    static void popErrorInfo(Component component, Exception e, String title) {
+        StringBuilder msg = new StringBuilder(e.toString());
+        //获得栈元素
+        StackTraceElement[] stackTraceElements = e.getStackTrace();
+        //挨个添加
+        for (StackTraceElement stackTraceElement : stackTraceElements) {
+            msg.append("\n").append(stackTraceElement.toString());
+        }
+        //实例化文本域并设置
+        JTextArea textArea = new JTextArea(msg.toString());
+        textArea.setLineWrap(false);
+        textArea.setEditable(false);
+        //实例化滚动面板并设置
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        //固定住大小
+        scrollPane.setPreferredSize(new Dimension(400, 300));
+        //弹出异常面板
+        JOptionPane.showMessageDialog(component, scrollPane, title, JOptionPane.ERROR_MESSAGE);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         //获取动作命令
@@ -181,7 +231,7 @@ public class MainFrame extends JFrame implements ActionListener {
                 break;
             case "redirect":
                 int redirectedIndex = redirectedComboBox.getSelectedIndex();
-                isRedirected = redirectedIndex == 1;
+                isRedirected = redirectedIndex == 0;
                 break;
             case "data":
                 visit();
@@ -233,6 +283,39 @@ public class MainFrame extends JFrame implements ActionListener {
                             "关于", JOptionPane.INFORMATION_MESSAGE, imageIcon);
                 }
                 break;
+            case "save":
+                Map<String, String> propertiesMap = new LinkedHashMap<>();
+                propertiesMap.put("账号(不加密)", rowName);
+                int nameIndex = nameComboBox.getSelectedIndex();
+                if (nameIndex != 0) {
+                    String nameComStr = nameComboBox.getItemAt(nameIndex).toString();
+                    propertiesMap.put("账号(" + nameComStr + ")", inUseName);
+                }
+                propertiesMap.put("密码(不加密)", rowPwd);
+                int pwdIndex = pwdComboBox.getSelectedIndex();
+                if (pwdIndex != 0) {
+                    String pwdComStr = pwdComboBox.getItemAt(pwdIndex).toString();
+                    propertiesMap.put("密码(" + pwdComStr + ")", inUsePwd);
+                }
+                String urlStr = urlField.getText();
+                propertiesMap.put("URL", urlStr);
+                String parameterStr = argField.getText();
+                propertiesMap.put("参数", parameterStr);
+                propertiesMap.put("编码方式", charset);
+                propertiesMap.put("请求方法", requestMethod);
+                propertiesMap.put("重定向", isRedirected ? "是" : "否");
+                propertiesMap.put("连接超时", connectTimeField.getText());
+                propertiesMap.put("读取超时", readTimeField.getText());
+                propertiesMap.put("请求头", requestHeadArea.getText());
+                propertiesMap.put("cookies", cookiesField.getText());
+                propertiesMap.put("返回数据", dataTextPane.getText());
+                SaveDialog saveDialog = new SaveDialog(propertiesMap);
+                saveDialog.pack();
+                saveDialog.setVisible(true);
+                break;
+            case "loginTest":
+
+                break;
             default:
                 break;
         }
@@ -249,14 +332,14 @@ public class MainFrame extends JFrame implements ActionListener {
                 try {
                     inUseName = Base64Tool.encode(rowName, "UTF-8");
                 } catch (Exception ex) {
-                    popErrorInfo(ex, "加密用户名失败");
+                    popErrorInfo(this, ex, "加密用户名失败");
                 }
                 break;
             case 2:
                 try {
                     inUseName = Security.md5(rowName);
                 } catch (Exception ex) {
-                    popErrorInfo(ex, "加密用户名失败");
+                    popErrorInfo(this, ex, "加密用户名失败");
                 }
                 break;
             case 0:
@@ -264,7 +347,6 @@ public class MainFrame extends JFrame implements ActionListener {
                 inUseName = rowName;
                 break;
         }
-
     }
 
     /**
@@ -279,14 +361,14 @@ public class MainFrame extends JFrame implements ActionListener {
                 try {
                     inUsePwd = Base64Tool.encode(rowPwd, "UTF-8");
                 } catch (Exception ex) {
-                    popErrorInfo(ex, "加密密码失败");
+                    popErrorInfo(this, ex, "加密密码失败");
                 }
                 break;
             case 2:
                 try {
                     inUsePwd = Security.md5(rowPwd);
                 } catch (Exception ex) {
-                    popErrorInfo(ex, "加密密码失败");
+                    popErrorInfo(this, ex, "加密密码失败");
                 }
                 break;
             case 0:
@@ -304,7 +386,7 @@ public class MainFrame extends JFrame implements ActionListener {
         String urlStr = urlField.getText();
         String arg = argField.getText();
         if (urlStr.isEmpty()) {
-            popErrorInfo(new IllegalArgumentException("没有输入URL"), "没有输入url");
+            popErrorInfo(this, new InvalidParameterException("没有输入URL"), "没有输入url");
             return;
         }
         try {
@@ -314,7 +396,7 @@ public class MainFrame extends JFrame implements ActionListener {
             arg = arg.replace("$(PASSWORD)", inUsePwd);
         } catch (NullPointerException ignore) {
         } catch (Exception e) {
-            popErrorInfo(e, "用户名或密码替换失败");
+            popErrorInfo(this, e, "用户名或密码替换失败");
             return;
         }
         String requestHeadStr = requestHeadArea.getText();
@@ -339,7 +421,7 @@ public class MainFrame extends JFrame implements ActionListener {
             formatBtn.setText(btnTextArr[0]);
         } catch (Exception ex) {
             //出错后弹出提示
-            popErrorInfo(ex, "获取数据异常");
+            popErrorInfo(this, ex, "获取数据异常");
             return;
         }
         int responseCode = Integer.parseInt(backData[2]);
@@ -369,41 +451,16 @@ public class MainFrame extends JFrame implements ActionListener {
                 insertObjectToDataArea(formatData);
                 formatBtn.setText(btnTextArr[1]);
             } catch (Exception ex) {
-                popErrorInfo(ex, "格式化JSON数据失败");
+                popErrorInfo(this, ex, "格式化JSON数据失败");
             }
         } else if (btnTextArr[1].equals(btnName)) {
             try {
                 setRowJsonDataToDataArea(rowJsonData);
                 formatBtn.setText(btnTextArr[0]);
             } catch (Exception ex) {
-                popErrorInfo(ex, "重置原始数据失败");
+                popErrorInfo(this, ex, "重置原始数据失败");
             }
         }
-    }
-
-    /**
-     * 弹出异常
-     *
-     * @param e 异常对象
-     */
-    private void popErrorInfo(Exception e, String title) {
-        StringBuilder msg = new StringBuilder(e.toString());
-        //获得栈元素
-        StackTraceElement[] stackTraceElements = e.getStackTrace();
-        //挨个添加
-        for (StackTraceElement stackTraceElement : stackTraceElements) {
-            msg.append("\n").append(stackTraceElement.toString());
-        }
-        //实例化文本域并设置
-        JTextArea textArea = new JTextArea(msg.toString());
-        textArea.setLineWrap(false);
-        textArea.setEditable(false);
-        //实例化滚动面板并设置
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        //固定住大小
-        scrollPane.setPreferredSize(new Dimension(400, 300));
-        //弹出异常面板
-        JOptionPane.showMessageDialog(this, scrollPane, title, JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -434,7 +491,9 @@ public class MainFrame extends JFrame implements ActionListener {
         redirectedComboBox.addActionListener(this);
 
         connectTimeField.setDocument(new NumberLimitedDocument());
+        connectTimeField.setText("99");
         readTimeField.setDocument(new NumberLimitedDocument());
+        readTimeField.setText("99");
 
         nameField.addKeyListener(new KeyListener() {
             @Override
@@ -476,9 +535,11 @@ public class MainFrame extends JFrame implements ActionListener {
         //设置动作命令
         formatBtn.setActionCommand("format");
         cookieStatusBtn.setActionCommand("cookieStatus");
+        saveBtn.setActionCommand("save");
         //添加响应事件
         formatBtn.addActionListener(this);
         cookieStatusBtn.addActionListener(this);
+        saveBtn.addActionListener(this);
     }
 
     /**
